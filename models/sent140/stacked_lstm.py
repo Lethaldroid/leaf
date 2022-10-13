@@ -1,9 +1,10 @@
 import numpy as np
 import os
 import sys
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
-from tensorflow.contrib import rnn
+from tensorflow.keras.layers import RNN
 
 from model import Model
 from utils.language_utils import line_to_indices, get_word_emb_arr, val_to_vec
@@ -19,6 +20,7 @@ class ClientModel(Model):
         self.num_classes = num_classes
         self.n_hidden = n_hidden
         _, self.indd, vocab = get_word_emb_arr(VOCAB_DIR)
+        
         self.vocab_size = len(vocab)
         if emb_arr:
             self.emb_arr = emb_arr
@@ -31,8 +33,8 @@ class ClientModel(Model):
         x = tf.cast(tf.nn.embedding_lookup(embedding, features), tf.float32)
         labels = tf.placeholder(tf.float32, [None, self.num_classes])
         
-        stacked_lstm = rnn.MultiRNNCell(
-            [rnn.BasicLSTMCell(self.n_hidden) for _ in range(2)])
+        stacked_lstm = tf.nn.rnn_cell.MultiRNNCell(
+            [tf.nn.rnn_cell.BasicLSTMCell(self.n_hidden) for _ in range(2)])
         outputs, _ = tf.nn.dynamic_rnn(stacked_lstm, x, dtype=tf.float32)
         fc1 = tf.layers.dense(inputs=outputs[:, -1, :], units=128)
         pred = tf.layers.dense(inputs=fc1, units=self.num_classes)

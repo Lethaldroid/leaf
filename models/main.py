@@ -5,7 +5,8 @@ import numpy as np
 import os
 import sys
 import random
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 import metrics.writer as metrics_writer
 
@@ -15,6 +16,7 @@ from server import Server
 from model import ServerModel
 
 from utils.args import parse_args
+
 from utils.model_utils import read_data
 
 STAT_METRICS_PATH = 'metrics/stat_metrics.csv'
@@ -36,6 +38,7 @@ def main():
     
     print('############################## %s ##############################' % model_path)
     mod = importlib.import_module(model_path)
+    
     ClientModel = getattr(mod, 'ClientModel')
 
     tup = MAIN_PARAMS[args.dataset][args.t]
@@ -44,7 +47,7 @@ def main():
     clients_per_round = args.clients_per_round if args.clients_per_round != -1 else tup[2]
 
     # Suppress tf warnings
-    tf.logging.set_verbosity(tf.logging.WARN)
+    #tf.logging.set_verbosity(tf.logging.WARN)
 
     # Create 2 models
     model_params = MODEL_PARAMS[model_path]
@@ -64,7 +67,6 @@ def main():
     clients = setup_clients(args.dataset, client_model, args.use_val_set)
     client_ids, client_groups, client_num_samples = server.get_clients_info(clients)
     print('Clients in Total: %d' % len(clients))
-
     # Initial status
     print('--- Random Initialization ---')
     stat_writer_fn = get_stat_writer_function(client_ids, client_groups, client_num_samples, args)
@@ -121,11 +123,12 @@ def setup_clients(dataset, model=None, use_val_set=False):
     eval_set = 'test' if not use_val_set else 'val'
     train_data_dir = os.path.join('..', 'data', dataset, 'data', 'train')
     test_data_dir = os.path.join('..', 'data', dataset, 'data', eval_set)
+    
+    users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)    
+    
 
-    users, groups, train_data, test_data = read_data(train_data_dir, test_data_dir)
-
+    
     clients = create_clients(users, groups, train_data, test_data, model)
-
     return clients
 
 

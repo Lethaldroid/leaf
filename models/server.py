@@ -3,7 +3,6 @@ import numpy as np
 from baseline_constants import BYTES_WRITTEN_KEY, BYTES_READ_KEY, LOCAL_COMPUTATIONS_KEY
 
 class Server:
-    
     def __init__(self, client_model):
         self.client_model = client_model
         self.model = client_model.get_params()
@@ -24,8 +23,10 @@ class Server:
         """
         num_clients = min(num_clients, len(possible_clients))
         np.random.seed(my_round)
-        self.selected_clients = np.random.choice(possible_clients, num_clients, replace=False)
+        
 
+        self.selected_clients = np.random.choice(possible_clients, num_clients, replace=False)
+        
         return [(c.num_train_samples, c.num_test_samples) for c in self.selected_clients]
 
     def train_model(self, num_epochs=1, batch_size=10, minibatch=None, clients=None):
@@ -58,18 +59,19 @@ class Server:
         for c in clients:
             c.model.set_params(self.model)
             comp, num_samples, update = c.train(num_epochs, batch_size, minibatch)
-
             sys_metrics[c.id][BYTES_READ_KEY] += c.model.size
             sys_metrics[c.id][BYTES_WRITTEN_KEY] += c.model.size
             sys_metrics[c.id][LOCAL_COMPUTATIONS_KEY] = comp
-
+            print(num_samples)
+            print(update)
             self.updates.append((num_samples, update))
 
         return sys_metrics
 
     def update_model(self):
-        total_weight = 0.
-        base = [0] * len(self.updates[0][1])
+        total_weight = 0
+        print(len(self.updates[0][1]))
+        base = [0] * [len(self.updates[0][1])]
         for (client_samples, client_model) in self.updates:
             total_weight += client_samples
             for i, v in enumerate(client_model):
